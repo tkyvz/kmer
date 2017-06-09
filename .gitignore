@@ -1,0 +1,4 @@
+# General MACOS Files
+*.DS_Store
+.AppleDouble
+.LSOverride
