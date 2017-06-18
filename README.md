@@ -55,6 +55,7 @@ python kmer.py --file-name ${FASTQ_FILE} --kmer-size ${KMER_SIZE} --most-frequen
 
 ## Results
 This program is tested with the `ERR047698.filt.fastq` and `ERR055763_1.filt.fastq` files, which can be found  [http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG01595/sequence_read/](here) for finding the most frequent 30 `25-mers`. Program has chosen BFCounter for *ERR047698.filt.fastq* and DSK for *ERR055763_1.filt.fastq*.
+
 | File Name              | Algorithm | Memory   | Iteration | Partition | Duration  |
 |:---------------------- |:---------:|:--------:|:---------:|:---------:|:---------:|
 | ERR047698.filt.fastq   | BFCounter | 24.0MB   | N\A       | N\A       | 25sec     |
