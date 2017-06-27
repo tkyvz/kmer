@@ -5,9 +5,9 @@ K-mer counter counts the most frequent `n` `k-mers` in a given FASTQ file. This 
 
 ### Algorithms
 K-mer counter uses two different algorithms:
-1. [https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-333](BFCounter)
+1. [BFCounter](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-333)
    BFCounter uses Bloom Filter for eliminating the unique k-mers in the FASTQ file. This operation reduces the number of items to be put in the hash table drastically. Thus, minimizes the memory usage.
-2. [http://minia.genouest.org/dsk/](DSK)
+2. [DSK](http://minia.genouest.org/dsk/)
    DSK uses hash values of the k-mers for grouping and partitioning the k-mers according to the specified target disk and memory spaces. K-mers are written in separate files, according to their hash value, for making the memory usage within the target value. For making the disk usage within the target value, this operation is done in multiple iterations.
 
 ### Prerequisites
@@ -48,13 +48,13 @@ python kmer.py --file-name ${FASTQ_FILE} --kmer-size ${KMER_SIZE} --most-frequen
 * **ERROR_RATE:** Bloom Filter error rate, used only for *BFCounter* algorithm. (DEFAULT=0.001)
 * **TARGET_DISK:** Target disk space that will be used in Gigabytes, used only for *DSK* algorithm. (DEFAULT=25)
 * **TARGET_MEMORY:** Target memory space that will be used in Gigabytes, used only for *DSK* algorithm. (DEFAULT=4)
-* **ALGORITHM:** For choosing the algorithm to be used. If the algorithm is not set (strongly recommended), the program will decide the algorithm to be used based on the criterion given in the [http://minia.genouest.org/dsk/](*DSK paper*).
+* **ALGORITHM:** For choosing the algorithm to be used. If the algorithm is not set (strongly recommended), the program will decide the algorithm to be used based on the criterion given in the [*DSK paper*](http://minia.genouest.org/dsk/).
   - `BF` or `bf` for *BFCounter*
   - `DSK` or `dsk` for *DSK*
 * **VERBOSE:** For printing elapsed time and the hash table memory usage.
 
 ## Results
-This program is tested with the `ERR047698.filt.fastq` and `ERR055763_1.filt.fastq` files, which can be found  [http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG01595/sequence_read/](here) for finding the most frequent 30 `25-mers`. Program has chosen BFCounter for *ERR047698.filt.fastq* and DSK for *ERR055763_1.filt.fastq*.
+This program is tested with the `ERR047698.filt.fastq` and `ERR055763_1.filt.fastq` files, which can be found  [here](http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/data/HG01595/sequence_read/) for finding the most frequent 30 `25-mers`. Program has chosen BFCounter for *ERR047698.filt.fastq* and DSK for *ERR055763_1.filt.fastq*.
 
 | File Name | Algorithm | Memory | Iteration | Partition | Duration |
 | :--- | :---: | :---: | :---: | :---: | :---: |
