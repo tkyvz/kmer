@@ -37,7 +37,7 @@ class BFCounter():
     def __init__(self, reader, args=None):
         """
         :param  reader: KmerReader object
-        :param  args: dictionary of additional arguments {error_rate, verbose}
+        :param  args: dictionary of additional arguments
         """
         if not isinstance(reader, KmerReader):
             raise TypeError('Reader should be of type KmerReader')

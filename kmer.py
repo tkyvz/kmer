@@ -1,6 +1,6 @@
 import time
 import argparse
-import textwrap
+
 
 from classes.kmerreader import KmerReader
 from classes.bfcounter import BFCounter
@@ -84,19 +84,6 @@ if __name__ == '__main__':
                         help='Target Memory in GB for DSK algorithm',
                         default=4,
                         type=check_positive)
-    # Algorithm to be used
-    parser.add_argument('-a',
-                        '--algorithm',
-                        help=textwrap.dedent('''\
-                            Algorithm to be used.
-                            -  {BF, bf} : Hash table with Bloom Filter
-                            - {DSK, dsk}: DSK, k-mer counting with very low me-
-                                          mory space
-                            If an algorithm is not specified, an appropriate
-                            algorithm is chosen with suggested values in DSK
-                            paper.
-                        '''),
-                        choices=['BF', 'bf', 'DSK', 'dsk'])
     # Verbose
     parser.add_argument('-v',
                         '--verbose',
@@ -106,6 +93,7 @@ if __name__ == '__main__':
     # Some algorithm parsing
     cli_args = parser.parse_args()
     verbose = cli_args.verbose
+    quick = cli_args.quick
     args = dict()
     args['verbose'] = verbose
     args['error_rate'] = cli_args.error_rate
@@ -118,36 +106,30 @@ if __name__ == '__main__':
     # Initialize KmerReader object with the specified file and kmer size
     if verbose:
         start = time.time()
+
     reader = KmerReader(file_name, k)
+
     if verbose:
         end = time.time()
         print('{} {}-mers in {} counted in {:.2f} seconds'.format(
             reader.total_kmer, k, file_name, (end - start)
         ))
-    algorithm = cli_args.algorithm
+
     if verbose:
         start = time.time()
-    if algorithm is None:  # algorithm is not specified
-        counter = DSK(reader, args)
-        if not counter.should_use():  # if kmer_memory < 0.7 * target_memory
-            counter = BFCounter(reader, args)
-            if verbose:
-                print('Selected algorithm: BFCounter')
-        elif verbose:
-            print('Selected algorithm: DSK')
-    elif algorithm == 'bf' or algorithm == 'BF':  # Bloom Filter Counter
+
+    counter = DSK(reader, args)
+    if not counter.should_use():  # if kmer_memory < 0.7 * target_memory
         counter = BFCounter(reader, args)
         if verbose:
-            print('Algorithm: BFCounter')
-    elif algorithm == 'dsk' or algorithm == 'DSK':  # DSK
-        counter = DSK(reader, args)
-        if verbose:
-            print('Algorithm: DSK')
-    else:
-        pass  # invalid argument, impossible case
+            print('Selected algorithm: BFCounter')
+    elif verbose:
+        print('Selected algorithm: DSK')
+
     for item in counter.nfrequent(n):  # Get the n most frequent items
         count, kmer = item
         print('{}: {}'.format(kmer, count))
+
     if verbose:
         end = time.time()
         print('Total duration: {:.2f} seconds'.format((end - start)))

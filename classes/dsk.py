@@ -4,6 +4,12 @@ import os
 import sys
 
 try:
+    from pybloomfilter import BloomFilter
+except ImportError:
+    raise ImportError('pybloomfilter module is required. ' +
+                      'Use pip install pybloomfiltermmap3')
+
+try:
     import mmh3
 except ImportError:
     raise ImportError('mmh3 module is required. Use pip install mmh3')
@@ -33,14 +39,15 @@ class DSK():
     def __init__(self, reader, args=None):
         """
         :param  reader: KmerReader object
-        :param  args: dictionary of additional arguments {error_rate, verbose}
+        :param  args: dictionary of additional arguments
         """
         if not isinstance(reader, KmerReader):
             raise TypeError('Reader should be of type KmerReader')
         # Default parameters
         D = 25 * (1024 ** 3) * 8  # 25 GB in bits (target disk space)
         M = 4 * (1024 ** 3) * 8  # 4 GB in bits (target memory)
-        self._verbose = False
+        self._error_rate = 1e-3  # Bloom Filter error rate
+        self._verbose = False  # Verbose
         if args is None:
             pass
         elif isinstance(args, dict):
@@ -50,6 +57,9 @@ class DSK():
             if 'target_memory' in args:  # target memory in GB
                 _M = args['target_memory']
                 M = _M * (1024 ** 3) * 8
+            if 'error_rate' in args:  # error rate for Bloom Filter
+                error_rate = args['error_rate']
+                self._error_rate = error_rate
             if 'verbose' in args:
                 verbose = args['verbose']
                 self._verbose = verbose
@@ -57,13 +67,15 @@ class DSK():
             raise TypeError('Arguments should be of type dict')
         self._reader = reader
         b = (self._reader.k + sys.getsizeof('')) * 8  # size of kmer in bits
+        b_disk = (self._reader.k + 1) * 8  # size of kmer and new line in file
         # calculate max unique kmers
         if (4 ** self._reader.k) > self._reader.total_kmer:
             v = reader.total_kmer
         else:  # cannot have more than 4^k kmer
             v = 4 ** self._reader.k
-        self._niter = math.ceil(v * b / D)
-        self._np = math.ceil((v * (b + 32)) / (0.7 * self._niter * M))
+        self._niter = math.ceil(v * b_disk / D)
+        self._np = math.ceil((v * b) / (0.7 * self._niter * M))
+        self._capacity = v / (self._niter * self._np)
         self._heap = []
         self._efficient = 0.7 * M < b * v
 
@@ -140,13 +152,21 @@ class DSK():
                 bar = ProgressBar(max_value=UnknownLength)
                 bar.start()
                 count = 0
+            bf = BloomFilter(
+                self._capacity,
+                self._error_rate,
+                'kmer_bf'
+            )
             kmer_counter = dict()
             with open(str(j), 'r') as f:  # open file for the current partition
                 for kmer in f:
-                    if kmer in kmer_counter:  # in Hash Table
-                        kmer_counter[kmer] += 1  # Increment
-                    else:  # not in Hash Table
-                        kmer_counter[kmer] = 1  # Add to Hash Table
+                    if kmer not in bf:  # not in Bloom Filter
+                        bf.add(kmer)
+                    else:  # in Bloom Filter
+                        if kmer in kmer_counter:  # in Hash Table
+                            kmer_counter[kmer] += 1  # Increment
+                        else:  # not in Hash Table
+                            kmer_counter[kmer] = 2  # Add to Hash Table
                     if self._verbose:
                         # update progress bar
                         count += 1
@@ -166,6 +186,7 @@ class DSK():
                        j + 1,
                        sys.getsizeof(kmer_counter) / (1024 ** 2)))
             os.remove(str(j))  # remove the partition file
+            os.remove('kmer_bf')
 
     def _populate(self, n):
         """
