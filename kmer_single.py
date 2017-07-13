@@ -141,6 +141,12 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
     if verbose:
         start = time.time()
 
+    # Assign functions to local variables for performance improvement
+    hash_function = mmh3.hash
+    heap_pushpop = heapq.heappushpop
+
+    CHUNK_LIMIT = math.floor(capacity / 10)  # write approximately in 10 calls
+
     heap = []
     for i in range(n):
         heap.append((0, ''))
@@ -149,6 +155,16 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
             start_iter = time.time()
             print('Iteration#{} started.'.format(it + 1))
         files = [open('{}'.format(j), 'w') for j in range(parts)]  # open files
+
+        # Write to files in chunks to have less file.write calls
+        chunks = [[] for j in range(parts)]
+
+        # Assign functions to local variables for performance improvement
+        writers = [files[j].write for j in range(parts)]
+        chunk_appender = [chunks[j].append for j in range(parts)]
+        chunk_cleaner = [chunks[j].clear for j in range(parts)]
+        chunk_joiner = ''.join
+
         with open(file_name, 'r') as f:
             line_num = 0
             for line in f:
@@ -156,13 +172,25 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
                     kmer_count = len(line) - k
                     for i in range(kmer_count):
                         kmer = line[i:i + k]
-                        h = mmh3.hash(kmer)
+                        h = hash_function(kmer)
                         if h % iters == it:  # belongs to this iteration
                             j = (h / iters) % parts
-                            files[int(j)].write(kmer + '\n')  # write to file
+                            _j = int(j)
+                            chunk_appender[_j](kmer + '\n')
+                            if len(chunks[_j]) == CHUNK_LIMIT:
+                                # write to file
+                                writers[_j](chunk_joiner(chunks[_j]))
+                                chunk_cleaner[_j]()
                 line_num += 1
+
+        # Write remaining kmers
+        for j in range(parts):
+            writers[j](chunk_joiner(chunks[j]))
+
         for f in files:
             f.close()  # close files
+
+        del chunks
 
         if verbose:
             end_disk_write = time.time()
@@ -173,6 +201,9 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
         for j in range(parts):
             bf = BloomFilter(capacity, error_rate, 'kmer_bf')
 
+            # Assign functions to local variables for performance improvement
+            add_to_bf = bf.add
+
             if verbose:
                 start_partition = time.time()
                 print('Reading partition#{} started.'.format(j + 1))
@@ -181,7 +212,7 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
             with open(str(j), 'r') as f:
                 for kmer in f:
                     if kmer not in bf:  # not in Bloom Filter
-                        bf.add(kmer)
+                        add_to_bf(kmer)
                     else:  # in Bloom Filter
                         try:
                             kmer_counter[kmer] += 1  # in Hash Table
@@ -199,7 +230,7 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
             for kmer, count in kmer_counter.items():
                 # insert to the heap if count is bigger than minimum
                 if count > heap[0][0]:
-                    heapq.heappushpop(heap, (count, kmer.rstrip()))
+                    heap_pushpop(heap, (count, kmer.rstrip()))
 
             if verbose:
                 end_populate = time.time()
@@ -236,6 +267,11 @@ def bf_counter(file_name, k, n, capacity, error_rate, verbose=False):
         heap.append((0, ''))
 
     bf = BloomFilter(capacity, error_rate, 'kmer_bf')
+
+    # Assign functions to local variables for performance improvement
+    add_to_bf = bf.add
+    heap_pushpop = heapq.heappushpop
+
     kmer_counter = dict()
     with open(file_name, 'r') as f:
         line_num = 0
@@ -245,7 +281,7 @@ def bf_counter(file_name, k, n, capacity, error_rate, verbose=False):
                 for i in range(kmer_count):
                     kmer = line[i:i + k]
                     if kmer not in bf:  # not in Bloom Filter
-                        bf.add(kmer)
+                        add_to_bf(kmer)
                     else:  # in Bloom Filter
                         try:
                             kmer_counter[kmer] += 1  # in Hash Table
@@ -264,7 +300,7 @@ def bf_counter(file_name, k, n, capacity, error_rate, verbose=False):
     for count, kmer in kmer_counter.items():
         # insert to the heap if count is bigger than minimum
         if count > heap[0][0]:
-            heapq.heappushpop(heap, (count, kmer))
+            heap_pushpop(heap, (count, kmer))
 
     if verbose:
         end_populate = time.time()
