@@ -70,13 +70,13 @@ if __name__ == '__main__':
     parser.add_argument('-e',
                         '--error-rate',
                         help='Bloom Filter error rate for BFCounter algorithm',
-                        default=1e-3,
+                        default=1e-2,
                         type=check_between_zero_one)
     # DSK target disk space
     parser.add_argument('-d',
                         '--target-disk',
                         help='Target Disk Space in GB for DSK algorithm',
-                        default=25,
+                        default=50,
                         type=check_positive)
     # DSK target disk memory
     parser.add_argument('-m',
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     # Some algorithm parsing
     cli_args = parser.parse_args()
     verbose = cli_args.verbose
-    quick = cli_args.quick
+    # quick = cli_args.quick
     args = dict()
     args['verbose'] = verbose
     args['error_rate'] = cli_args.error_rate

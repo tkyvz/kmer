@@ -42,7 +42,7 @@ class BFCounter():
         if not isinstance(reader, KmerReader):
             raise TypeError('Reader should be of type KmerReader')
         # Default parameters
-        self._error_rate = 1e-3
+        self._error_rate = 1e-2
         self._verbose = False
         if args is None:
             pass
@@ -105,9 +105,9 @@ class BFCounter():
             if kmer not in bf:  # not in Bloom Filter
                 bf.add(kmer)
             else:  # in Bloom Filter
-                if kmer in self._kmer_counter:  # in Hash Table
+                try:
                     self._kmer_counter[kmer] += 1  # Increment
-                else:
+                except KeyError:
                     self._kmer_counter[kmer] = 2  # Add to Hash Table
             if self._verbose:
                 # update progress bar

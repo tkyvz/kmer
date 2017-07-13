@@ -44,9 +44,9 @@ class DSK():
         if not isinstance(reader, KmerReader):
             raise TypeError('Reader should be of type KmerReader')
         # Default parameters
-        D = 25 * (1024 ** 3) * 8  # 25 GB in bits (target disk space)
+        D = 50 * (1024 ** 3) * 8  # 50 GB in bits (target disk space)
         M = 4 * (1024 ** 3) * 8  # 4 GB in bits (target memory)
-        self._error_rate = 1e-3  # Bloom Filter error rate
+        self._error_rate = 1e-2  # Bloom Filter error rate
         self._verbose = False  # Verbose
         if args is None:
             pass
@@ -163,9 +163,9 @@ class DSK():
                     if kmer not in bf:  # not in Bloom Filter
                         bf.add(kmer)
                     else:  # in Bloom Filter
-                        if kmer in kmer_counter:  # in Hash Table
-                            kmer_counter[kmer] += 1  # Increment
-                        else:  # not in Hash Table
+                        try:
+                            kmer_counter[kmer] += 1  # in Hash Table
+                        except KeyError:  # not in Hash Table
                             kmer_counter[kmer] = 2  # Add to Hash Table
                     if self._verbose:
                         # update progress bar
