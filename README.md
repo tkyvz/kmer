@@ -38,7 +38,7 @@ There are also other packages used for code styling an linter purposes, such as
 ## Running
 Project can be run as follows
 ```
-python kmer.py --file-name ${FASTQ_FILE} --kmer-size ${KMER_SIZE} --most-frequent ${MOST_FREQUENT} --error-rate ${ERROR_RATE} --target-disk ${TARGET_DISK} --target-memory ${TARGET_MEMORY} --algorithm ${ALGORITHM} --verbose
+python kmer_single_file.py --file-name ${FASTQ_FILE} --kmer-size ${KMER_SIZE} --most-frequent ${MOST_FREQUENT} --error-rate ${ERROR_RATE} --target-disk ${TARGET_DISK} --target-memory ${TARGET_MEMORY} --algorithm ${ALGORITHM} --verbose
 ```
 
 ### Parameters
