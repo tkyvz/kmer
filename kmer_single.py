@@ -1,4 +1,5 @@
 import argparse
+from collections import defaultdict
 import heapq
 import math
 import os
@@ -105,25 +106,25 @@ def parameters(total_kmers, target_disk, target_memory, k, verbose=False):
     number_of_iterations = int(math.ceil(total_kmers * b_disk / target_disk))
     number_of_partitions = int(
         math.ceil((v * b) / (0.7 * target_memory * number_of_iterations)))
-    is_dsk = 0.7 * target_memory < b * v
+    use_dsk = 0.7 * target_memory < b * v
     # Bloom Filter Capacity
     if dsk:
-        bloom_filter_capacity = total_kmers / (number_of_iterations *
-                                               number_of_partitions)
+        bf_capacity = total_kmers / (number_of_iterations *
+                                     number_of_partitions)
     else:
-        bloom_filter_capacity = total_kmers
+        bf_capacity = total_kmers
 
     if verbose:
         print('Parameters are calculated')
-        if is_dsk:
+        if use_dsk:
             print('Algorithm: DSK')
             print('# of iterations: {}'.format(number_of_iterations))
             print('# of partitions: {}'.format(number_of_partitions))
         else:
             print('Algorithm: BFCounter')
-        print('Bloom Filter Capacity: {}'.format(bloom_filter_capacity))
+        print('Bloom Filter Capacity: {}'.format(bf_capacity))
 
-    return number_of_iterations, number_of_partitions, bloom_filter_capacity, is_dsk
+    return number_of_iterations, number_of_partitions, bf_capacity, use_dsk
 
 
 def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
@@ -201,6 +202,8 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
         for j in range(parts):
             bf = BloomFilter(capacity, error_rate, 'kmer_bf')
 
+            kmer_counter = defaultdict(lambda: 1)
+
             # Assign functions to local variables for performance improvement
             add_to_bf = bf.add
 
@@ -208,16 +211,12 @@ def dsk(file_name, k, n, capacity, error_rate, iters, parts, verbose=False):
                 start_partition = time.time()
                 print('Reading partition#{} started.'.format(j + 1))
 
-            kmer_counter = dict()
             with open(str(j), 'r') as f:
                 for kmer in f:
                     if kmer not in bf:  # not in Bloom Filter
                         add_to_bf(kmer)
                     else:  # in Bloom Filter
-                        try:
-                            kmer_counter[kmer] += 1  # in Hash Table
-                        except KeyError:  # not in Hash Table
-                            kmer_counter[kmer] = 2  # Add to Hash Table
+                        kmer_counter[kmer] += 1
 
             if verbose:
                 end_partition = time.time()
@@ -268,11 +267,12 @@ def bf_counter(file_name, k, n, capacity, error_rate, verbose=False):
 
     bf = BloomFilter(capacity, error_rate, 'kmer_bf')
 
+    kmer_counter = defaultdict(lambda: 1)
+
     # Assign functions to local variables for performance improvement
     add_to_bf = bf.add
     heap_pushpop = heapq.heappushpop
 
-    kmer_counter = dict()
     with open(file_name, 'r') as f:
         line_num = 0
         for line in f:
@@ -283,10 +283,7 @@ def bf_counter(file_name, k, n, capacity, error_rate, verbose=False):
                     if kmer not in bf:  # not in Bloom Filter
                         add_to_bf(kmer)
                     else:  # in Bloom Filter
-                        try:
-                            kmer_counter[kmer] += 1  # in Hash Table
-                        except KeyError:  # not in Hash Table
-                            kmer_counter[kmer] = 2  # Add to Hash Table
+                        kmer_counter[kmer] += 1
             line_num += 1
     if verbose:
         end_hash = time.time()
@@ -373,8 +370,7 @@ if __name__ == '__main__':
     k = cli_args.kmer_size  # k, size of kmer
     file_name = cli_args.file_name  # fastq file name
 
-    if verbose:
-        start = time.time()
+    start = time.time()
 
     # Count total k-mers
     total_kmers = count_kmers(file_name, k, verbose=verbose)
@@ -396,6 +392,5 @@ if __name__ == '__main__':
     for count, kmer in heapq.nlargest(n, heap):
         print('{}: {}'.format(kmer, count))
 
-    if verbose:
-        end = time.time()
-        print('Duration: {:.2f} seconds'.format(end - start))
+    end = time.time()
+    print('Duration: {:.2f} seconds'.format(end - start))
