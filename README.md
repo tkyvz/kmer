@@ -48,9 +48,6 @@ python kmer_single_file.py --file-name ${FASTQ_FILE} --kmer-size ${KMER_SIZE} --
 * **ERROR_RATE:** Bloom Filter error rate, used only for *BFCounter* algorithm. (DEFAULT=0.001)
 * **TARGET_DISK:** Target disk space that will be used in Gigabytes, used only for *DSK* algorithm. (DEFAULT=25)
 * **TARGET_MEMORY:** Target memory space that will be used in Gigabytes, used only for *DSK* algorithm. (DEFAULT=4)
-* **ALGORITHM:** For choosing the algorithm to be used. If the algorithm is not set (strongly recommended), the program will decide the algorithm to be used based on the criterion given in the [*DSK paper*](http://minia.genouest.org/dsk/).
-  - `BF` or `bf` for *BFCounter*
-  - `DSK` or `dsk` for *DSK*
 * **VERBOSE:** For printing elapsed time and the hash table memory usage.
 
 ## Results
